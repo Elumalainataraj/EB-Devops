@@ -1,0 +1,46 @@
+replicaCount: 2
+
+image:
+  repository: eb-demo-service
+  tag: "1.0.0"
+  # Image is loaded straight into the kind cluster via
+  # `kind load docker-image`, never pulled from a registry.
+  pullPolicy: Never
+
+app:
+  name: eb-demo-service
+  version: "1.0.0"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  className: nginx
+  host: demo.local
+  path: /
+
+# Deliberately modest — this is a tiny stateless HTTP service, not a
+# production workload. requests = what it needs day-to-day, limits =
+# hard ceiling so one bad pod can't starve the node.
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    failureThreshold: 3
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
