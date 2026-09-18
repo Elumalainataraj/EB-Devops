@@ -10,7 +10,9 @@ WORKDIR /app
 COPY package.json ./
 # No lockfile / deps in this minimal service, but this is the correct
 # pattern once one exists: `npm ci --omit=dev` for reproducible installs.
-RUN npm install --omit=dev
+# `mkdir -p` guards against npm skipping node_modules creation entirely
+# when there are zero dependencies to install.
+RUN npm install --omit=dev && mkdir -p node_modules
 
 COPY server.js ./
 
