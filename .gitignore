@@ -1,0 +1,8 @@
+node_modules/
+*.log
+!part4-session.log
+.env
+.env.*
+.DS_Store
+kubeconfig
+*.kubeconfig
