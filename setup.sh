@@ -40,15 +40,30 @@ fi
 kubectl config use-context "kind-${CLUSTER_NAME}" >/dev/null
 
 # --- 2. ingress-nginx --------------------------------------------------------
-log "Installing ingress-nginx controller"
-# kubectl apply is inherently idempotent — re-running just reconciles state.
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+log "Checking ingress-nginx controller status"
+if kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=5s >/dev/null 2>&1; then
+  echo "ingress-nginx controller is already ready — skipping install/reapply."
+else
+  echo "Installing ingress-nginx controller"
+  # kubectl apply is inherently idempotent — re-running just reconciles state.
+  kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 
-echo "Waiting for ingress-nginx controller to be ready..."
-kubectl wait --namespace ingress-nginx \
-  --for=condition=ready pod \
-  --selector=app.kubernetes.io/component=controller \
-  --timeout=180s
+  echo "Waiting for the ingress-nginx controller Deployment to exist..."
+  # `kubectl wait` errors immediately with "no matching resources found" if the
+  # pod doesn't exist yet — poll until at least one shows up before waiting on it.
+  for i in $(seq 1 30); do
+    if kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller 2>/dev/null | grep -q controller; then
+      break
+    fi
+    sleep 2
+  done
+
+  echo "Waiting for ingress-nginx controller to be ready..."
+  kubectl wait --namespace ingress-nginx \
+    --for=condition=ready pod \
+    --selector=app.kubernetes.io/component=controller \
+    --timeout=180s
+fi
 
 # --- 3. build + load image ---------------------------------------------------
 log "Building image ${IMAGE}"
