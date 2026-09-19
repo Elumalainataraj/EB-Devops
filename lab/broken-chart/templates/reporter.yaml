@@ -42,6 +42,7 @@ spec:
             timeoutSeconds: 3
           securityContext:
             runAsNonRoot: true
+            runAsUser: 65532
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
@@ -61,5 +62,5 @@ spec:
     app: reporter
   ports:
     - name: http
-      port: 8080
+      port: {{ .Values.common.port }}
       targetPort: {{ .Values.common.port }}
